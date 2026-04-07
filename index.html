@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lobby ❤️</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      color: #4a1d5d;
+      overflow-x: hidden;
+    }
+    .foto-card {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 15px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .foto-card img {
+      width: 100%;           /* Se ajusta al ancho de la columna */
+      height: 150px;         /* Altura fija para que todas se vean iguales */
+      object-fit: cover;     /* Recorta la imagen para que rellene el espacio sin deformarse */
+      border-radius: 10px;
+      cursor: zoom-in;
+      transition: transform 0.3s;
+    }
+
+    .foto-card img:hover {
+      transform: scale(1.05);
+    }
+
+    .borrar-foto {
+      position: absolute;
+      top: 5px;
+      right: 10px;
+      background: rgba(255, 0, 0, 0.7);
+      color: white;
+      border-radius: 50%;
+      width: 25px;
+      height: 25px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      font-size: 14px;
+      z-index: 10;
+    }
+
+    .foto-texto {
+      margin-top: 8px;
+      font-size: 0.9rem;
+      color: #4a1d5d;
+      text-align: center;
+      word-break: break-word;
+    }    
+    #bg-video {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      object-fit: cover;
+      z-index: -2;
+    }
+
+    .overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(255, 255, 255, 0.1); 
+      z-index: -1;
+    }
+
+    h1 {
+      text-align: center;
+      margin: 40px 0;
+      font-size: 2.5rem;
+      color: #ffffff;
+      text-shadow: 2px 4px 8px rgba(74, 29, 93, 0.5);
+    }
+
+    .lobby {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 20px;
+      padding: 20px;
+      max-width: 800px;
+      margin: auto;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      padding: 30px 15px;
+      border-radius: 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: 0.4s;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      color: #ffffff;
+      font-weight: 600;
+    }
+
+    .card:hover {
+      transform: translateY(-10px);
+      background: rgba(255, 255, 255, 0.4);
+    }
+
+    .section {
+      display: none;
+      max-width: 500px;
+      margin: 30px auto;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 25px;
+      border-radius: 25px;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+    }
+
+    h2, h3 { color: #8e65a6; margin-top: 10px; }
+
+    input, textarea {
+      width: 100%;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid #ddd;
+      margin-bottom: 10px;
+      box-sizing: border-box;
+      font-family: inherit;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 12px;
+      background: #a37eb8;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 5px;
+    }
+
+    button:hover { background: #8e65a6; }
+
+    .btn-volver {
+      background: #f8bbd0;
+      color: #4a1d5d;
+      margin-top: 25px;
+    }
+
+    /* Estilos para el Chat y Listas */
+    #mensajes, #listaGustos, #lista {
+      margin-top: 15px;
+    }
+
+    #fotoModal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.9);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      cursor: pointer;
+    }
+    /* --- Añade esto dentro de tu etiqueta <style> --- */
+
+    /* Estilos para el elemento de la lista de metas */
+    #lista li {
+      position: relative; /* Necesario para posicionar el botón de borrar */
+      background: rgba(255, 255, 255, 0.4); /* Fondo translúcido para que combine */
+      padding: 15px 40px 15px 15px; /* Padding extra a la derecha para la X */
+      border-radius: 15px;
+      margin-bottom: 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+      display: flex; /* Mantenemos flex para alinear emoji y texto */
+      align-items: center;
+      transition: background 0.3s;
+    }
+
+    #lista li:hover {
+      background: rgba(255, 255, 255, 0.6);
+    }   
+
+    /* Estilo para el botón de borrar meta */
+    .borrar-meta {
+      position: absolute;
+      bottom: 8px; /* Separación desde abajo */
+      right: 12px; /* Separación desde la derecha */
+      cursor: pointer;
+      font-size: 14px; /* Un poco más pequeño para que no estorbe */
+      color: #e57373; /* Un rojo suave */
+      opacity: 0.6; /* Un poco transparente por defecto */
+      transition: opacity 0.3s, transform 0.2s;
+      z-index: 5; /* Asegura que esté sobre el texto */
+    }
+
+    .borrar-meta:hover {
+      opacity: 1; /* Se ve claro al pasar el ratón */
+      transform: scale(1.1); /* Efecto sutil de agrandamiento */
+    }
+
+    /* Ajuste para el texto de la meta para que no se superponga con la X */
+    .meta-texto {
+      flex: 1; /* Toma todo el espacio disponible */
+      margin-right: 15px; /* Espacio antes de la X */
+      word-break: break-word; /* Rompe palabras largas si es necesario */
+    } 
+  </style>
+</head>
+<body>
+
+  <video autoplay muted loop playsinline id="bg-video">
+    <source src="https://files.catbox.moe/qhhktl.mp4" type="video/mp4">
+  </video>
+  <div class="overlay"></div>
+
+  <h1>❤️ Nuestro Lobby</h1>
+
+  <div class="lobby" id="lobby">
+    <div class="card" onclick="abrir('metas')">🎯<br>Metas</div>
+    <div class="card" onclick="abrir('chat')">💬<br>Chat</div>
+    <div class="card" onclick="abrir('recuerdos')">📸<br>Recuerdos</div>
+    <div class="card" onclick="abrir('sorpresa')">🎁<br>Sorpresa</div>
+    <div class="card" onclick="abrir('gustos')">❤️<br>Gustos</div>
+  </div>
+
+  <div id="metas" class="section">
+    <h2>Nuestras Metas 🎯</h2>
+    <input id="metaInput" placeholder="Escribe una meta juntos...">
+    <button onclick="guardarMeta(document.getElementById('metaInput').value)">Guardar Meta</button>
+    <ul id="lista"></ul>
+    <button class="btn-volver" onclick="volver()">⬅ Volver</button>
+  </div>
+
+  <div id="recuerdos" class="section">
+    <h2>Recuerdos 📸</h2>
+    <label>Selecciona una foto:</label>
+    <input type="file" id="fotoInput">
+    <textarea id="textoFoto" placeholder="Escribe algo sobre este momento..."></textarea>
+    <button onclick="subirFoto()">Subir a la Galería</button>
+    <div id="galeria" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 15px;"></div>
+    <button class="btn-volver" onclick="volver()">⬅ Volver</button>
+  </div>
+
+  <div id="sorpresa" class="section">
+    <h2>Sorpresas 🎁</h2>
+    <h3>Crear sorpresa</h3>
+    <textarea id="mensajeCrear" placeholder="Escribe la sorpresa..."></textarea>
+    <input id="clicksNecesarios" type="number" placeholder="Cantidad de clicks">
+    <label>Archivo (Opcional):</label>
+    <input type="file" id="archivoSorpresa">
+    <button onclick="crearSorpresa()">Guardar</button>
+    <hr>
+    <h3>Descubre la sorpresa</h3>
+    <button id="botonSorpresa" onclick="sumarClick()" style="font-size: 1.2rem; padding: 15px;">
+      🎁 0 clicks
+    </button>
+    <div id="resultadoSorpresa"></div>
+    <button class="btn-volver" onclick="volver()">⬅ Volver</button>
+  </div>
+
+  <div id="chat" class="section">
+    <h2>Chat 💬</h2>
+    <div id="mensajes" style="max-height:300px; overflow-y:auto; padding:10px; background: rgba(255,255,255,0.5); border-radius: 10px;"></div>
+    <input id="nombreInput" placeholder="Tu nombre...">
+    <input id="mensajeInput" placeholder="Escribe un mensaje...">
+    <button onclick="enviarMensaje()">Enviar</button>
+    <button class="btn-volver" onclick="volver()">⬅ Volver</button>
+  </div>
+
+  <div id="gustos" class="section">
+    <h2>Nuestros Gustos ❤️</h2>
+    <label>Sube algo multimedia:</label>
+    <input type="file" id="gustoInput" accept="image/*,video/*,audio/*">
+    <textarea id="textoGusto" placeholder="¿Qué nos gusta?"></textarea>
+    <button onclick="subirGusto()">Añadir a la lista</button>
+    <div id="listaGustos"></div>
+    <button class="btn-volver" onclick="volver()">⬅ Volver</button>
+  </div>
+
+  <div id="fotoModal" onclick="if(event.target == this) cerrarModal()">
+    <span onclick="cerrarModal()" style="position:absolute; top:20px; right:30px; font-size:50px; color:white; font-weight:bold;">&times;</span>
+    <img id="imgModal" style="max-width:90%; max-height:80%; border-radius:15px; border: 3px solid white;">
+    <p id="textoModal" style="color:white; margin-top:20px; font-size:1.2rem; text-align:center;"></p>
+  </div>
+
+  <script>
+    function abrir(id) {
+      document.getElementById('lobby').style.display = 'none';
+      document.querySelectorAll('.section').forEach(sec => sec.style.display = 'none');
+      document.getElementById(id).style.display = 'block';
+      if (id === 'chat') {
+        const m = document.getElementById("mensajes");
+        m.scrollTop = m.scrollHeight;
+      }
+    }
+    function volver() {
+      document.getElementById('lobby').style.display = 'grid';
+      document.querySelectorAll('.section').forEach(sec => sec.style.display = 'none');
+    }
+  </script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
