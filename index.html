@@ -203,7 +203,61 @@
       opacity: 1; /* Se ve claro al pasar el ratón */
       transform: scale(1.1); /* Efecto sutil de agrandamiento */
     }
+    .gusto-card {
+      background: rgba(255, 255, 255, 0.4);
+      padding: 15px;
+      border-radius: 20px;
+      position: relative;
+      margin-bottom: 15px;
+      backdrop-filter: blur(5px);
+    }
 
+    .gusto-media {
+      width: 100%; 
+      border-radius: 12px; 
+      display: block;
+    }
+
+    .gusto-texto {
+      margin: 10px 0; 
+      color: #4a1d5d; 
+      font-weight: 500;
+    }
+
+    .like-container {
+      display: inline-flex;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.6);
+      padding: 5px 12px;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: transform 0.2s;
+      user-select: none;
+    }
+
+    .like-container:active {
+      transform: scale(1.2);
+    }
+
+    .corazon {
+      font-size: 1.2rem;
+      margin-right: 5px;
+    }
+
+    .contador {
+      font-weight: bold;
+      color: #4a1d5d;
+    }
+
+    .borrar-btn {
+      position: absolute; 
+      top: 10px; 
+      right: 15px; 
+      cursor: pointer; 
+      font-weight: bold; 
+      color: #4a1d5d;
+      font-size: 20px;
+    }
     /* Ajuste para el texto de la meta para que no se superponga con la X */
     .meta-texto {
       flex: 1; /* Toma todo el espacio disponible */
