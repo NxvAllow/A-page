@@ -370,7 +370,7 @@ function cerrarModal() {
 }
 
 //////////////////////////////////////////////////
-// 🔥 GUSTOS (Multimedia + Texto + Fecha)
+// 🔥 GUSTOS (Con sistema de Likes tipo TikTok)
 //////////////////////////////////////////////////
 
 async function subirGusto() {
@@ -378,7 +378,7 @@ async function subirGusto() {
   const file = input.files[0];
   const texto = document.getElementById("textoGusto").value;
 
-  if (!file && !texto) return; // Al menos debe haber texto o archivo
+  if (!file && !texto) return;
 
   let url = "";
   let tipo = "";
@@ -389,7 +389,6 @@ async function subirGusto() {
       formData.append("file", file);
       formData.append("upload_preset", "mi_present");
 
-      // Cloudinary detecta automáticamente el tipo si usamos /auto/upload
       const response = await fetch(
         "https://api.cloudinary.com/v1_1/dwnn2bgpf/auto/upload",
         { method: "POST", body: formData }
@@ -397,23 +396,49 @@ async function subirGusto() {
 
       const data = await response.json();
       url = data.secure_url;
-      tipo = data.resource_type; // 'image', 'video' o 'raw' (para audio)
+      tipo = data.resource_type;
     } catch (error) {
       console.error("Error subiendo a Cloudinary:", error);
     }
   }
 
-  // Guardar en Firebase
+  // Guardar en Firebase con un array de likes vacío
   await addDoc(collection(db, "gustos"), {
     url: url,
     texto: texto,
     tipo: tipo,
-    fecha: new Date()// Guarda la fecha legible
+    fecha: serverTimestamp(), // Mejor usar serverTimestamp para consistencia
+    likes: [] // Array que guardará los nombres de los usuarios que dieron like
   });
 
-  // Limpiar y recargar
   input.value = "";
   document.getElementById("textoGusto").value = "";
+  cargarGustos();
+}
+
+// Nueva función para dar/quitar like
+async function toggleLike(id, likesActuales) {
+  if (!usuario) {
+    alert("Por favor, ingresa tu nombre en el Chat primero.");
+    return;
+  }
+
+  const gustoRef = doc(db, "gustos", id);
+  let nuevosLikes = [...likesActuales];
+
+  if (nuevosLikes.includes(usuario)) {
+    // Si ya existe, lo quitamos (Dislike)
+    nuevosLikes = nuevosLikes.filter(u => u !== usuario);
+  } else {
+    // Si no existe, lo añadimos (Like)
+    nuevosLikes.push(usuario);
+  }
+
+  await updateDoc(gustoRef, {
+    likes: nuevosLikes
+  });
+  
+  // Recargamos para ver el cambio (aunque onSnapshot sería mejor, esto funciona con tu lógica actual)
   cargarGustos();
 }
 
@@ -421,55 +446,50 @@ async function cargarGustos() {
   const contenedor = document.getElementById("listaGustos");
   contenedor.innerHTML = "";
 
-  // 1. Creamos la consulta ordenada por el campo "fecha"
-  // Use "desc" si quieres lo más nuevo arriba, o quítalo para lo más viejo arriba
   const q = query(collection(db, "gustos"), orderBy("fecha", "desc"));
-
-  // 2. Usamos la consulta 'q' en lugar de la colección directa
   const querySnapshot = await getDocs(q);
 
   querySnapshot.forEach((docu) => {
     const data = docu.data();
-    const card = document.createElement("div");
+    const id = docu.id;
+    const likes = data.likes || [];
+    const yaDiLike = likes.includes(usuario);
     
-    card.style.background = "#fbcfe8";
-    card.style.padding = "15px";
-    card.style.borderRadius = "15px";
-    card.style.position = "relative";
-    card.style.marginBottom = "10px";
+    const card = document.createElement("div");
+    card.className = "gusto-card"; // Usaremos una clase para el estilo
 
     let mediaHTML = "";
     if (data.url) {
       if (data.tipo === "image") {
-        mediaHTML = `<img src="${data.url}" style="width:100%; border-radius:10px; cursor:pointer;" onclick="abrirModal('${data.url}', '${data.texto}')">`;
+        mediaHTML = `<img src="${data.url}" class="gusto-media" onclick="abrirModal('${data.url}', '${data.texto}')">`;
       } else if (data.tipo === "video") {
-        mediaHTML = `<video src="${data.url}" controls style="width:100%; border-radius:10px;"></video>`;
-      } else if (data.tipo === "raw" || data.url.includes("mp3") || data.url.includes("wav")) {
+        mediaHTML = `<video src="${data.url}" controls class="gusto-media"></video>`;
+      } else {
         mediaHTML = `<audio src="${data.url}" controls style="width:100%;"></audio>`;
       }
     }
 
+    // El corazón cambia de color si el usuario actual dio like
+    const corazonIcono = yaDiLike ? "❤️" : "🤍";
+
     card.innerHTML = `
-      <span style="position:absolute; top:10px; right:15px; cursor:pointer; font-weight:bold;" onclick="borrarGusto('${docu.id}')">❌</span>
+      <span class="borrar-btn" onclick="borrarGusto('${id}')">×</span>
       ${mediaHTML}
-      <p style="margin: 10px 0 5px 0; color: white;">${data.texto}</p>
-      <small style="opacity:0.5; font-size:10px;">${data.fecha}</small>
+      <p class="gusto-texto">${data.texto}</p>
+      <div class="like-container" onclick="toggleLike('${id}', ${JSON.stringify(likes).replace(/"/g, '&quot;')})">
+        <span class="corazon">${corazonIcono}</span>
+        <span class="contador">${likes.length}</span>
+      </div>
     `;
 
     contenedor.appendChild(card);
   });
 }
 
-async function borrarGusto(id) {
-  if(confirm("¿Borrar este gusto?")) {
-    await deleteDoc(doc(db, "gustos", id));
-    cargarGustos();
-  }
-}
 //////////////////////////////////////////////////
 // 🔥 GLOBAL
 //////////////////////////////////////////////////
-
+window.toggleLike = toggleLike;
 window.subirFoto = subirFoto; // 🔥 IMPORTANTE
 window.enviarMensaje = enviarMensaje;
 window.crearSorpresa = crearSorpresa;
