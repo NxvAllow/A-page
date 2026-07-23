@@ -7,6 +7,8 @@ import { serverTimestamp }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { updateDoc } 
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { increment } 
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 // CONFIG
 const firebaseConfig = {
   apiKey: "AIzaSyDWZTHAjvielvOlRljQ8ZxxDkU_IF0s3kA",
@@ -370,7 +372,7 @@ function cerrarModal() {
 }
 
 //////////////////////////////////////////////////
-// 🔥 GUSTOS (Con sistema de Likes tipo TikTok)
+// 🔥 GUSTOS (Multimedia + Texto + Fecha)
 //////////////////////////////////////////////////
 
 async function subirGusto() {
@@ -378,7 +380,7 @@ async function subirGusto() {
   const file = input.files[0];
   const texto = document.getElementById("textoGusto").value;
 
-  if (!file && !texto) return;
+  if (!file && !texto) return; // Al menos debe haber texto o archivo
 
   let url = "";
   let tipo = "";
@@ -389,6 +391,7 @@ async function subirGusto() {
       formData.append("file", file);
       formData.append("upload_preset", "mi_present");
 
+      // Cloudinary detecta automáticamente el tipo si usamos /auto/upload
       const response = await fetch(
         "https://api.cloudinary.com/v1_1/dwnn2bgpf/auto/upload",
         { method: "POST", body: formData }
@@ -396,49 +399,23 @@ async function subirGusto() {
 
       const data = await response.json();
       url = data.secure_url;
-      tipo = data.resource_type;
+      tipo = data.resource_type; // 'image', 'video' o 'raw' (para audio)
     } catch (error) {
       console.error("Error subiendo a Cloudinary:", error);
     }
   }
 
-  // Guardar en Firebase con un array de likes vacío
+  // Guardar en Firebase
   await addDoc(collection(db, "gustos"), {
     url: url,
     texto: texto,
     tipo: tipo,
-    fecha: serverTimestamp(), // Mejor usar serverTimestamp para consistencia
-    likes: [] // Array que guardará los nombres de los usuarios que dieron like
+    fecha: new Date()// Guarda la fecha legible
   });
 
+  // Limpiar y recargar
   input.value = "";
   document.getElementById("textoGusto").value = "";
-  cargarGustos();
-}
-
-// Nueva función para dar/quitar like
-async function toggleLike(id, likesActuales) {
-  if (!usuario) {
-    alert("Por favor, ingresa tu nombre en el Chat primero.");
-    return;
-  }
-
-  const gustoRef = doc(db, "gustos", id);
-  let nuevosLikes = [...likesActuales];
-
-  if (nuevosLikes.includes(usuario)) {
-    // Si ya existe, lo quitamos (Dislike)
-    nuevosLikes = nuevosLikes.filter(u => u !== usuario);
-  } else {
-    // Si no existe, lo añadimos (Like)
-    nuevosLikes.push(usuario);
-  }
-
-  await updateDoc(gustoRef, {
-    likes: nuevosLikes
-  });
-  
-  // Recargamos para ver el cambio (aunque onSnapshot sería mejor, esto funciona con tu lógica actual)
   cargarGustos();
 }
 
@@ -446,50 +423,251 @@ async function cargarGustos() {
   const contenedor = document.getElementById("listaGustos");
   contenedor.innerHTML = "";
 
+  // 1. Creamos la consulta ordenada por el campo "fecha"
+  // Use "desc" si quieres lo más nuevo arriba, o quítalo para lo más viejo arriba
   const q = query(collection(db, "gustos"), orderBy("fecha", "desc"));
+
+  // 2. Usamos la consulta 'q' en lugar de la colección directa
   const querySnapshot = await getDocs(q);
 
   querySnapshot.forEach((docu) => {
     const data = docu.data();
-    const id = docu.id;
-    const likes = data.likes || [];
-    const yaDiLike = likes.includes(usuario);
-    
     const card = document.createElement("div");
-    card.className = "gusto-card"; // Usaremos una clase para el estilo
+    
+    card.style.background = "#fbcfe8";
+    card.style.padding = "15px";
+    card.style.borderRadius = "15px";
+    card.style.position = "relative";
+    card.style.marginBottom = "10px";
 
     let mediaHTML = "";
     if (data.url) {
       if (data.tipo === "image") {
-        mediaHTML = `<img src="${data.url}" class="gusto-media" onclick="abrirModal('${data.url}', '${data.texto}')">`;
+        mediaHTML = `<img src="${data.url}" style="width:100%; border-radius:10px; cursor:pointer;" onclick="abrirModal('${data.url}', '${data.texto}')">`;
       } else if (data.tipo === "video") {
-        mediaHTML = `<video src="${data.url}" controls class="gusto-media"></video>`;
-      } else {
+        mediaHTML = `<video src="${data.url}" controls style="width:100%; border-radius:10px;"></video>`;
+      } else if (data.tipo === "raw" || data.url.includes("mp3") || data.url.includes("wav")) {
         mediaHTML = `<audio src="${data.url}" controls style="width:100%;"></audio>`;
       }
     }
 
-    // El corazón cambia de color si el usuario actual dio like
-    const corazonIcono = yaDiLike ? "❤️" : "🤍";
-
     card.innerHTML = `
-      <span class="borrar-btn" onclick="borrarGusto('${id}')">×</span>
+      <span style="position:absolute; top:10px; right:15px; cursor:pointer; font-weight:bold;" onclick="borrarGusto('${docu.id}')">❌</span>
       ${mediaHTML}
-      <p class="gusto-texto">${data.texto}</p>
-      <div class="like-container" onclick="toggleLike('${id}', ${JSON.stringify(likes).replace(/"/g, '&quot;')})">
-        <span class="corazon">${corazonIcono}</span>
-        <span class="contador">${likes.length}</span>
-      </div>
+      <p style="margin: 10px 0 5px 0; color: white;">${data.texto}</p>
+      <small style="opacity:0.5; font-size:10px;">${data.fecha}</small>
     `;
 
     contenedor.appendChild(card);
   });
 }
 
+async function borrarGusto(id) {
+  if(confirm("¿Borrar este gusto?")) {
+    await deleteDoc(doc(db, "gustos", id));
+    cargarGustos();
+  }
+}
+
+async function cargarGustos() {
+  const contenedor = document.getElementById("listaGustos");
+  contenedor.innerHTML = "";
+
+  // 1. Creamos la consulta ordenada por el campo "fecha"
+  // Use "desc" si quieres lo más nuevo arriba, o quítalo para lo más viejo arriba
+  const q = query(collection(db, "gustos"), orderBy("fecha", "desc"));
+
+  // 2. Usamos la consulta 'q' en lugar de la colección directa
+  const querySnapshot = await getDocs(q);
+
+  querySnapshot.forEach((docu) => {
+    const data = docu.data();
+    const card = document.createElement("div");
+    card.className = "gusto-card"; // Aplicamos la clase CSS
+
+    let mediaHTML = "";
+    if (data.url) {
+      if (data.tipo === "image") {
+        mediaHTML = `<img src="${data.url}" class="gusto-media" style="cursor:pointer;" onclick="abrirModal('${data.url}', '${data.texto}')">`;
+      } else if (data.tipo === "video") {
+        mediaHTML = `<video src="${data.url}" controls class="gusto-media"></video>`;
+      } else if (data.tipo === "raw" || data.url.includes("mp3") || data.url.includes("wav")) {
+        mediaHTML = `<audio src="${data.url}" controls style="width:100%;"></audio>`;
+      }
+    }
+
+    // Estructura HTML limpia con las nuevas clases y el corazón visual
+    card.innerHTML = `
+      <span class="borrar-btn" onclick="borrarGusto('${docu.id}')">❌</span>
+      ${mediaHTML}
+      <p class="gusto-texto">${data.texto}</p>
+      <small class="gusto-fecha">${data.fecha}</small>
+      <span class="corazon-visual">❤️</span> `;
+
+    contenedor.appendChild(card);
+  });
+}
+//////////////////////////////////////////////////
+// 🔥 DIBUJOS (Canvas + Cloudinary + Likes)
+//////////////////////////////////////////////////
+
+const canvasDibujo = document.getElementById("canvasDibujo");
+const ctxDibujo = canvasDibujo.getContext("2d");
+let dibujando = false;
+let ultimoX = 0;
+let ultimoY = 0;
+
+function limpiarCanvas() {
+  ctxDibujo.fillStyle = "#ffffff";
+  ctxDibujo.fillRect(0, 0, canvasDibujo.width, canvasDibujo.height);
+}
+limpiarCanvas(); // fondo blanco inicial, si no PNG sale transparente
+
+function obtenerPosCanvas(e) {
+  const rect = canvasDibujo.getBoundingClientRect();
+  const escalaX = canvasDibujo.width / rect.width;
+  const escalaY = canvasDibujo.height / rect.height;
+  return {
+    x: (e.clientX - rect.left) * escalaX,
+    y: (e.clientY - rect.top) * escalaY
+  };
+}
+
+function empezarDibujo(e) {
+  dibujando = true;
+  const pos = obtenerPosCanvas(e);
+  ultimoX = pos.x;
+  ultimoY = pos.y;
+}
+
+function dibujarTrazo(e) {
+  if (!dibujando) return;
+  const pos = obtenerPosCanvas(e);
+
+  ctxDibujo.strokeStyle = document.getElementById("colorPicker").value;
+  ctxDibujo.lineWidth = document.getElementById("grosorPicker").value;
+  ctxDibujo.lineCap = "round";
+  ctxDibujo.lineJoin = "round";
+
+  ctxDibujo.beginPath();
+  ctxDibujo.moveTo(ultimoX, ultimoY);
+  ctxDibujo.lineTo(pos.x, pos.y);
+  ctxDibujo.stroke();
+
+  ultimoX = pos.x;
+  ultimoY = pos.y;
+}
+
+function terminarDibujo() {
+  dibujando = false;
+}
+
+canvasDibujo.addEventListener("pointerdown", empezarDibujo);
+canvasDibujo.addEventListener("pointermove", dibujarTrazo);
+canvasDibujo.addEventListener("pointerup", terminarDibujo);
+canvasDibujo.addEventListener("pointerleave", terminarDibujo);
+
+async function guardarDibujo() {
+  const nombre = document.getElementById("nombreDibujo").value.trim();
+
+  if (!nombre) {
+    alert("Escribe tu nombre antes de guardar 🙂");
+    return;
+  }
+
+  const dataURL = canvasDibujo.toDataURL("image/png");
+
+  try {
+    const formData = new FormData();
+    formData.append("file", dataURL);
+    formData.append("upload_preset", "mi_present");
+
+    const response = await fetch(
+      "https://api.cloudinary.com/v1_1/dwnn2bgpf/image/upload",
+      { method: "POST", body: formData }
+    );
+
+    const data = await response.json();
+
+    if (!data.secure_url) {
+      console.error("Error Cloudinary:", data);
+      alert("No se pudo subir el dibujo 😢");
+      return;
+    }
+
+    await addDoc(collection(db, "dibujos"), {
+      nombre: nombre,
+      url: data.secure_url,
+      likes: 0,
+      fecha: serverTimestamp()
+    });
+
+    limpiarCanvas();
+    alert("¡Dibujo guardado! 🎨");
+
+  } catch (error) {
+    console.error("Error:", error);
+    alert("Ocurrió un error al guardar el dibujo");
+  }
+}
+
+function obtenerLikeados() {
+  return JSON.parse(localStorage.getItem("dibujosLikeados") || "[]");
+}
+
+function escucharDibujos() {
+  const contenedor = document.getElementById("galeriaDibujos");
+  const q = query(collection(db, "dibujos"), orderBy("fecha", "desc"));
+
+  onSnapshot(q, (snapshot) => {
+    contenedor.innerHTML = "";
+    const likeados = obtenerLikeados();
+
+    snapshot.forEach((docu) => {
+      const data = docu.data();
+      const yaLeGusta = likeados.includes(docu.id);
+
+      const card = document.createElement("div");
+      card.className = "dibujo-card";
+
+      card.innerHTML = `
+        <span class="borrar-dibujo" onclick="borrarDibujo('${docu.id}')">❌</span>
+        <img src="${data.url}" onclick="abrirModal('${data.url}', '${data.nombre}')">
+        <div class="dibujo-nombre">${data.nombre}</div>
+        <div class="dibujo-fila">
+          <span class="dibujo-like ${yaLeGusta ? "liked" : ""}" onclick="darLike('${docu.id}', ${yaLeGusta})">
+            ${yaLeGusta ? "❤️" : "🤍"} ${data.likes || 0}
+          </span>
+        </div>
+      `;
+
+      contenedor.appendChild(card);
+    });
+  });
+}
+
+async function darLike(id, yaLeGusta) {
+  if (yaLeGusta) return; // evita likear el mismo dibujo varias veces
+
+  const likeados = obtenerLikeados();
+  likeados.push(id);
+  localStorage.setItem("dibujosLikeados", JSON.stringify(likeados));
+
+  await updateDoc(doc(db, "dibujos", id), {
+    likes: increment(1)
+  });
+}
+
+async function borrarDibujo(id) {
+  if (confirm("¿Borrar este dibujo?")) {
+    await deleteDoc(doc(db, "dibujos", id));
+  }
+}
+
 //////////////////////////////////////////////////
 // 🔥 GLOBAL
 //////////////////////////////////////////////////
-window.toggleLike = toggleLike;
+
 window.subirFoto = subirFoto; // 🔥 IMPORTANTE
 window.enviarMensaje = enviarMensaje;
 window.crearSorpresa = crearSorpresa;
@@ -501,7 +679,12 @@ window.borrarGusto = borrarGusto;
 window.guardarMeta = guardarMeta;
 window.borrarMeta = borrarMeta;
 window.alternarMeta = alternarMeta;
+window.limpiarCanvas = limpiarCanvas;
+window.guardarDibujo = guardarDibujo;
+window.darLike = darLike;
+window.borrarDibujo = borrarDibujo;
 escucharChat();
 cargarMetas();
 cargarFotos();
 cargarGustos();
+escucharDibujos();
