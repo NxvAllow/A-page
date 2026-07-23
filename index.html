@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Lobby</title>
+  <title>Lobby ❤️</title>
 
   <style>
   body {
@@ -282,8 +282,9 @@
   .canvas-toolbar {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     margin-bottom: 10px;
+    flex-wrap: wrap;
   }
 
   .canvas-toolbar input[type="color"] {
@@ -298,6 +299,17 @@
 
   .canvas-toolbar input[type="range"] {
     flex: 1;
+    min-width: 60px;
+  }
+
+  .slider-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    color: #4a1d5d;
+    flex: 1;
+    min-width: 130px;
   }
 
   .btn-secundario {
@@ -311,16 +323,22 @@
 
   .btn-secundario:hover { background: #f4a6c3; }
 
+  .canvas-wrapper {
+    width: 100%;
+    overflow: auto;
+    border-radius: 15px;
+    border: 2px solid #e5d3ec;
+    margin-bottom: 10px;
+    max-height: 420px;
+  }
+
   #canvasDibujo {
     width: 100%;
     aspect-ratio: 4 / 3;
     background: #ffffff;
-    border-radius: 15px;
-    border: 2px solid #e5d3ec;
     touch-action: none;
     cursor: crosshair;
     display: block;
-    margin-bottom: 10px;
   }
 
   .galeria-dibujos {
@@ -401,7 +419,7 @@
   </video>
   <div class="overlay"></div>
 
-  <h1>Lobby</h1>
+  <h1>❤️ Nuestro Lobby</h1>
 
   <div class="lobby" id="lobby">
     <div class="card" onclick="abrir('metas')">🎯<br>Metas</div>
@@ -421,7 +439,7 @@
   </div>
 
   <div id="recuerdos" class="section">
-    <h2>Galería de arte 📸</h2>
+    <h2>Recuerdos 📸</h2>
     <label>Selecciona una foto:</label>
     <input type="file" id="fotoInput">
     <textarea id="textoFoto" placeholder="Escribe algo sobre este momento..."></textarea>
@@ -457,7 +475,7 @@
   </div>
 
   <div id="gustos" class="section">
-    <h2>Nuestros Gustos</h2>
+    <h2>Nuestros Gustos ❤️</h2>
     <label>Sube algo multimedia:</label>
     <input type="file" id="gustoInput" accept="image/*,video/*,audio/*">
     <textarea id="textoGusto" placeholder="¿Qué nos gusta?"></textarea>
@@ -474,17 +492,38 @@
 
     <div class="canvas-toolbar">
       <input type="color" id="colorPicker" value="#8e65a6" title="Color personalizado">
-      <button type="button" class="btn-herramienta activa" id="btnLapiz" onclick="usarLapiz()" title="Lápiz">✏️</button>
-      <button type="button" class="btn-herramienta" id="btnBorrador" onclick="usarBorrador()" title="Borrador">🧹</button>
-      <input type="range" id="grosorPicker" min="1" max="30" value="4">
+      <button type="button" class="btn-herramienta activa" id="btnLapiz" onclick="usarHerramienta('lapiz')" title="Lápiz">✏️</button>
+      <button type="button" class="btn-herramienta" id="btnMarcador" onclick="usarHerramienta('marcador')" title="Marcador suave">🖊️</button>
+      <button type="button" class="btn-herramienta" id="btnAerografo" onclick="usarHerramienta('aerografo')" title="Aerógrafo">💨</button>
+      <button type="button" class="btn-herramienta" id="btnBorrador" onclick="usarHerramienta('borrador')" title="Borrador">🧹</button>
     </div>
+
     <div class="canvas-toolbar">
-      <button type="button" class="btn-herramienta" onclick="deshacer()" title="Deshacer">↩️</button>
-      <button type="button" class="btn-herramienta" onclick="rehacer()" title="Rehacer">↪️</button>
+      <label class="slider-label">✏️ Grosor
+        <input type="range" id="grosorPicker" min="1" max="30" value="4">
+      </label>
+      <label class="slider-label">💧 Opacidad
+        <input type="range" id="opacidadPicker" min="10" max="100" value="100">
+      </label>
+    </div>
+
+    <div class="canvas-toolbar">
+      <button type="button" class="btn-herramienta" id="btnSimetria" onclick="alternarSimetria()" title="Simetría espejo">🪞 Simetría</button>
+      <button type="button" class="btn-herramienta" onclick="cambiarZoom(-25)" title="Alejar">🔍−</button>
+      <span id="zoomLabel" style="min-width:45px; text-align:center; font-size:0.85rem; color:#4a1d5d;">100%</span>
+      <button type="button" class="btn-herramienta" onclick="cambiarZoom(25)" title="Acercar">🔍+</button>
+      <button type="button" class="btn-herramienta" onclick="restablecerZoom()" title="Zoom normal">↺</button>
+    </div>
+
+    <div class="canvas-toolbar">
+      <button type="button" class="btn-herramienta" onclick="deshacer()" title="Deshacer">↩️ Deshacer</button>
+      <button type="button" class="btn-herramienta" onclick="rehacer()" title="Rehacer">↪️ Rehacer</button>
       <button type="button" class="btn-secundario" onclick="limpiarCanvas()">🗑 Borrar todo</button>
     </div>
 
-    <canvas id="canvasDibujo" width="500" height="375"></canvas>
+    <div class="canvas-wrapper" id="canvasWrapper">
+      <canvas id="canvasDibujo" width="500" height="375"></canvas>
+    </div>
 
     <button onclick="guardarDibujo()">Guardar Dibujo</button>
 
@@ -507,6 +546,9 @@
       if (id === 'chat') {
         const m = document.getElementById("mensajes");
         m.scrollTop = m.scrollHeight;
+      }
+      if (id === 'dibujos' && window.restaurarBorradorDibujo) {
+        window.restaurarBorradorDibujo();
       }
     }
     function volver() {
