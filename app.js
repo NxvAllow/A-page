@@ -473,12 +473,87 @@ const ctxDibujo = canvasDibujo.getContext("2d");
 let dibujando = false;
 let ultimoX = 0;
 let ultimoY = 0;
+let modoBorrador = false;
+let historial = [];
+let historialRedo = [];
+const MAX_HISTORIAL = 20;
 
-function limpiarCanvas() {
+const paletaColores = [
+  "#000000", "#808080", "#c0c0c0", "#ffffff",
+  "#3b82f6", "#22d3ee", "#16a34a", "#84cc16",
+  "#dc2626", "#f97316", "#f59e0b", "#a16207",
+  "#92400e", "#7c3aed", "#ec4899", "#8e65a6"
+];
+
+function crearPaleta() {
+  const contenedor = document.getElementById("paletaColores");
+  paletaColores.forEach((color, i) => {
+    const swatch = document.createElement("div");
+    swatch.className = "swatch" + (i === paletaColores.length - 1 ? " activo" : "");
+    swatch.style.background = color;
+    swatch.onclick = () => seleccionarColor(color, swatch);
+    contenedor.appendChild(swatch);
+  });
+}
+crearPaleta();
+
+function seleccionarColor(color, swatchEl) {
+  document.getElementById("colorPicker").value = color;
+  document.querySelectorAll(".swatch").forEach(s => s.classList.remove("activo"));
+  if (swatchEl) swatchEl.classList.add("activo");
+  usarLapiz();
+}
+
+document.getElementById("colorPicker").addEventListener("input", () => {
+  document.querySelectorAll(".swatch").forEach(s => s.classList.remove("activo"));
+  usarLapiz();
+});
+
+function usarLapiz() {
+  modoBorrador = false;
+  document.getElementById("btnLapiz").classList.add("activa");
+  document.getElementById("btnBorrador").classList.remove("activa");
+}
+
+function usarBorrador() {
+  modoBorrador = true;
+  document.getElementById("btnBorrador").classList.add("activa");
+  document.getElementById("btnLapiz").classList.remove("activa");
+}
+
+function limpiarCanvas(guardar = true) {
+  if (guardar) guardarEstado();
   ctxDibujo.fillStyle = "#ffffff";
   ctxDibujo.fillRect(0, 0, canvasDibujo.width, canvasDibujo.height);
 }
-limpiarCanvas(); // fondo blanco inicial, si no PNG sale transparente
+limpiarCanvas(false); // fondo blanco inicial, sin registrar en el historial
+
+function guardarEstado() {
+  historial.push(canvasDibujo.toDataURL());
+  if (historial.length > MAX_HISTORIAL) historial.shift();
+  historialRedo = []; // una acción nueva invalida el rehacer
+}
+
+function restaurarEstado(dataURL) {
+  const img = new Image();
+  img.onload = () => {
+    ctxDibujo.clearRect(0, 0, canvasDibujo.width, canvasDibujo.height);
+    ctxDibujo.drawImage(img, 0, 0);
+  };
+  img.src = dataURL;
+}
+
+function deshacer() {
+  if (historial.length === 0) return;
+  historialRedo.push(canvasDibujo.toDataURL());
+  restaurarEstado(historial.pop());
+}
+
+function rehacer() {
+  if (historialRedo.length === 0) return;
+  historial.push(canvasDibujo.toDataURL());
+  restaurarEstado(historialRedo.pop());
+}
 
 function obtenerPosCanvas(e) {
   const rect = canvasDibujo.getBoundingClientRect();
@@ -492,6 +567,7 @@ function obtenerPosCanvas(e) {
 
 function empezarDibujo(e) {
   dibujando = true;
+  guardarEstado();
   const pos = obtenerPosCanvas(e);
   ultimoX = pos.x;
   ultimoY = pos.y;
@@ -501,7 +577,7 @@ function dibujarTrazo(e) {
   if (!dibujando) return;
   const pos = obtenerPosCanvas(e);
 
-  ctxDibujo.strokeStyle = document.getElementById("colorPicker").value;
+  ctxDibujo.strokeStyle = modoBorrador ? "#ffffff" : document.getElementById("colorPicker").value;
   ctxDibujo.lineWidth = document.getElementById("grosorPicker").value;
   ctxDibujo.lineCap = "round";
   ctxDibujo.lineJoin = "round";
@@ -640,6 +716,10 @@ window.limpiarCanvas = limpiarCanvas;
 window.guardarDibujo = guardarDibujo;
 window.darLike = darLike;
 window.borrarDibujo = borrarDibujo;
+window.usarLapiz = usarLapiz;
+window.usarBorrador = usarBorrador;
+window.deshacer = deshacer;
+window.rehacer = rehacer;
 escucharChat();
 cargarMetas();
 cargarFotos();
