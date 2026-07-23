@@ -11,12 +11,13 @@ import { increment }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 // CONFIG
 const firebaseConfig = {
-  apiKey: "AIzaSyDWZTHAjvielvOlRljQ8ZxxDkU_IF0s3kA",
-  authDomain: "genesis-acc68.firebaseapp.com",
-  projectId: "genesis-acc68",
-  storageBucket: "genesis-acc68.firebasestorage.app",
-  messagingSenderId: "927892532926",
-  appId: "1:927892532926:web:d4ebdf8547e454b4b0f8ef"
+  apiKey: "AIzaSyDiI6uWLAyiMAW2ha8UUuC0nxvDQ5Kw4js",
+  authDomain: "wasa-7f4a3.firebaseapp.com",
+  projectId: "wasa-7f4a3",
+  storageBucket: "wasa-7f4a3.firebasestorage.app",
+  messagingSenderId: "112022021236",
+  appId: "1:112022021236:web:55c8e767fd627e39bd9d21",
+  measurementId: "G-14CHL236F6"
 };
 
 const app = initializeApp(firebaseConfig);
