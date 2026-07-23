@@ -3,267 +3,356 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Lobby ❤️</title>
+  <title>Lobby</title>
 
   <style>
-    body {
-      margin: 0;
-      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      color: #4a1d5d;
-      overflow-x: hidden;
-    }
-    .foto-card {
-      background: rgba(255, 255, 255, 0.2);
-      border-radius: 15px;
-      padding: 10px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      position: relative;
-      overflow: hidden;
-    }
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    color: #4a1d5d;
+    overflow-x: hidden;
+  }
+  
+  /* --- ESTILOS GENERALES Y LOBBY --- */
+  #bg-video {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    object-fit: cover;
+    z-index: -2;
+  }
 
-    .foto-card img {
-      width: 100%;           /* Se ajusta al ancho de la columna */
-      height: 150px;         /* Altura fija para que todas se vean iguales */
-      object-fit: cover;     /* Recorta la imagen para que rellene el espacio sin deformarse */
-      border-radius: 10px;
-      cursor: zoom-in;
-      transition: transform 0.3s;
-    }
+  .overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(255, 255, 255, 0.1); 
+    z-index: -1;
+  }
 
-    .foto-card img:hover {
-      transform: scale(1.05);
-    }
+  h1 {
+    text-align: center;
+    margin: 40px 0;
+    font-size: 2.5rem;
+    color: #ffffff;
+    text-shadow: 2px 4px 8px rgba(74, 29, 93, 0.5);
+  }
 
-    .borrar-foto {
-      position: absolute;
-      top: 5px;
-      right: 10px;
-      background: rgba(255, 0, 0, 0.7);
-      color: white;
-      border-radius: 50%;
-      width: 25px;
-      height: 25px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      cursor: pointer;
-      font-size: 14px;
-      z-index: 10;
-    }
+  .lobby {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 20px;
+    padding: 20px;
+    max-width: 800px;
+    margin: auto;
+  }
 
-    .foto-texto {
-      margin-top: 8px;
-      font-size: 0.9rem;
-      color: #4a1d5d;
-      text-align: center;
-      word-break: break-word;
-    }    
-    #bg-video {
-      position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      object-fit: cover;
-      z-index: -2;
-    }
+  .card {
+    background: rgba(255, 255, 255, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    padding: 30px 15px;
+    border-radius: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: 0.4s;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    color: #ffffff;
+    font-weight: 600;
+  }
 
-    .overlay {
-      position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(255, 255, 255, 0.1); 
-      z-index: -1;
-    }
+  .card:hover {
+    transform: translateY(-10px);
+    background: rgba(255, 255, 255, 0.4);
+  }
 
-    h1 {
-      text-align: center;
-      margin: 40px 0;
-      font-size: 2.5rem;
-      color: #ffffff;
-      text-shadow: 2px 4px 8px rgba(74, 29, 93, 0.5);
-    }
+  .section {
+    display: none;
+    max-width: 500px;
+    margin: 30px auto;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 25px;
+    border-radius: 25px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+  }
 
-    .lobby {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: 20px;
-      padding: 20px;
-      max-width: 800px;
-      margin: auto;
-    }
+  h2, h3 { color: #8e65a6; margin-top: 10px; }
 
-    .card {
-      background: rgba(255, 255, 255, 0.25);
-      border: 1px solid rgba(255, 255, 255, 0.4);
-      padding: 30px 15px;
-      border-radius: 20px;
-      text-align: center;
-      cursor: pointer;
-      transition: 0.4s;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-      color: #ffffff;
-      font-weight: 600;
-    }
+  input, textarea {
+    width: 100%;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid #ddd;
+    margin-bottom: 10px;
+    box-sizing: border-box;
+    font-family: inherit;
+  }
 
-    .card:hover {
-      transform: translateY(-10px);
-      background: rgba(255, 255, 255, 0.4);
-    }
+  button {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 12px;
+    background: #a37eb8;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 5px;
+  }
 
-    .section {
-      display: none;
-      max-width: 500px;
-      margin: 30px auto;
-      background: rgba(255, 255, 255, 0.9);
-      padding: 25px;
-      border-radius: 25px;
-      box-shadow: 0 15px 35px rgba(0,0,0,0.2);
-    }
+  button:hover { background: #8e65a6; }
 
-    h2, h3 { color: #8e65a6; margin-top: 10px; }
+  .btn-volver {
+    background: #f8bbd0;
+    color: #4a1d5d;
+    margin-top: 25px;
+  }
 
-    input, textarea {
-      width: 100%;
-      padding: 12px;
-      border-radius: 12px;
-      border: 1px solid #ddd;
-      margin-bottom: 10px;
-      box-sizing: border-box;
-      font-family: inherit;
-    }
+  /* --- RECUERDOS (Galería) --- */
+  .foto-card {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 15px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+  }
 
-    button {
-      width: 100%;
-      padding: 12px;
-      border: none;
-      border-radius: 12px;
-      background: #a37eb8;
-      color: white;
-      font-weight: bold;
-      cursor: pointer;
-      margin-top: 5px;
-    }
+  .foto-card img {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 10px;
+    cursor: zoom-in;
+    transition: transform 0.3s;
+  }
 
-    button:hover { background: #8e65a6; }
+  .foto-card img:hover { transform: scale(1.05); }
 
-    .btn-volver {
-      background: #f8bbd0;
-      color: #4a1d5d;
-      margin-top: 25px;
-    }
+  .borrar-foto {
+    position: absolute;
+    top: 5px;
+    right: 10px;
+    background: rgba(255, 0, 0, 0.7);
+    color: white;
+    border-radius: 50%;
+    width: 25px;
+    height: 25px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    font-size: 14px;
+    z-index: 10;
+  }
 
-    /* Estilos para el Chat y Listas */
-    #mensajes, #listaGustos, #lista {
-      margin-top: 15px;
-    }
+  .foto-texto {
+    margin-top: 8px;
+    font-size: 0.9rem;
+    color: #4a1d5d;
+    text-align: center;
+    word-break: break-word;
+  }
 
-    #fotoModal {
-      display: none;
-      position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.9);
-      z-index: 1000;
-      justify-content: center;
-      align-items: center;
-      flex-direction: column;
-      cursor: pointer;
-    }
-    /* --- Añade esto dentro de tu etiqueta <style> --- */
+  /* --- METAS --- */
+  #lista li {
+    position: relative;
+    background: rgba(255, 255, 255, 0.4);
+    padding: 15px 40px 15px 15px;
+    border-radius: 15px;
+    margin-bottom: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    display: flex;
+    align-items: center;
+    transition: background 0.3s;
+  }
 
-    /* Estilos para el elemento de la lista de metas */
-    #lista li {
-      position: relative; /* Necesario para posicionar el botón de borrar */
-      background: rgba(255, 255, 255, 0.4); /* Fondo translúcido para que combine */
-      padding: 15px 40px 15px 15px; /* Padding extra a la derecha para la X */
-      border-radius: 15px;
-      margin-bottom: 10px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-      display: flex; /* Mantenemos flex para alinear emoji y texto */
-      align-items: center;
-      transition: background 0.3s;
-    }
+  #lista li:hover { background: rgba(255, 255, 255, 0.6); }
 
-    #lista li:hover {
-      background: rgba(255, 255, 255, 0.6);
-    }   
+  .borrar-meta {
+    position: absolute;
+    bottom: 8px;
+    right: 12px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #e57373;
+    opacity: 0.6;
+    transition: opacity 0.3s, transform 0.2s;
+    z-index: 5;
+  }
 
-    /* Estilo para el botón de borrar meta */
-    .borrar-meta {
-      position: absolute;
-      bottom: 8px; /* Separación desde abajo */
-      right: 12px; /* Separación desde la derecha */
-      cursor: pointer;
-      font-size: 14px; /* Un poco más pequeño para que no estorbe */
-      color: #e57373; /* Un rojo suave */
-      opacity: 0.6; /* Un poco transparente por defecto */
-      transition: opacity 0.3s, transform 0.2s;
-      z-index: 5; /* Asegura que esté sobre el texto */
-    }
+  .borrar-meta:hover { opacity: 1; transform: scale(1.1); }
 
-    .borrar-meta:hover {
-      opacity: 1; /* Se ve claro al pasar el ratón */
-      transform: scale(1.1); /* Efecto sutil de agrandamiento */
-    }
-    .gusto-card {
-      background: rgba(255, 255, 255, 0.4);
-      padding: 15px;
-      border-radius: 20px;
-      position: relative;
-      margin-bottom: 15px;
-      backdrop-filter: blur(5px);
-    }
+  .meta-texto {
+    flex: 1;
+    margin-right: 15px;
+    word-break: break-word;
+  }
 
-    .gusto-media {
-      width: 100%; 
-      border-radius: 12px; 
-      display: block;
-    }
+  /* --- GUSTOS (Lo que pediste) --- */
+  .gusto-card {
+    background: #fbcfe8; /* Tu color original */
+    padding: 15px;
+    border-radius: 15px;
+    position: relative; /* Importante para posicionar elementos dentro */
+    margin-bottom: 10px;
+    overflow: hidden; /* Mantiene todo dentro de los bordes redondeados */
+  }
 
-    .gusto-texto {
-      margin: 10px 0; 
-      color: #4a1d5d; 
-      font-weight: 500;
-    }
+  .gusto-media {
+    width: 100%;
+    border-radius: 10px;
+    display: block;
+    margin-bottom: 10px;
+  }
 
-    .like-container {
-      display: inline-flex;
-      align-items: center;
-      background: rgba(255, 255, 255, 0.6);
-      padding: 5px 12px;
-      border-radius: 20px;
-      cursor: pointer;
-      transition: transform 0.2s;
-      user-select: none;
-    }
+  .gusto-texto {
+    margin: 0 0 5px 0;
+    color: white; /* Tu color original */
+    word-break: break-word;
+  }
 
-    .like-container:active {
-      transform: scale(1.2);
-    }
+  .gusto-fecha {
+    opacity: 0.5;
+    font-size: 10px;
+    color: white;
+  }
 
-    .corazon {
-      font-size: 1.2rem;
-      margin-right: 5px;
-    }
+  /* El corazón visual que pediste */
+  .corazon-visual {
+    position: absolute;
+    bottom: 10px;
+    right: 15px;
+    font-size: 1.5rem;
+    color: white; /* Corazón blanco */
+    opacity: 0.8;
+  }
 
-    .contador {
-      font-weight: bold;
-      color: #4a1d5d;
-    }
+  /* Botón borrar (X) ajustado para que no estorbe */
+  .borrar-btn {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    cursor: pointer;
+    font-weight: bold;
+    color: white;
+    font-size: 1.2rem;
+    z-index: 10;
+  }
 
-    .borrar-btn {
-      position: absolute; 
-      top: 10px; 
-      right: 15px; 
-      cursor: pointer; 
-      font-weight: bold; 
-      color: #4a1d5d;
-      font-size: 20px;
-    }
-    /* Ajuste para el texto de la meta para que no se superponga con la X */
-    .meta-texto {
-      flex: 1; /* Toma todo el espacio disponible */
-      margin-right: 15px; /* Espacio antes de la X */
-      word-break: break-word; /* Rompe palabras largas si es necesario */
-    } 
+  /* --- DIBUJOS --- */
+  .canvas-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .canvas-toolbar input[type="color"] {
+    width: 45px;
+    height: 40px;
+    padding: 0;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    margin-bottom: 0;
+  }
+
+  .canvas-toolbar input[type="range"] {
+    flex: 1;
+  }
+
+  .btn-secundario {
+    width: auto;
+    white-space: nowrap;
+    background: #f8bbd0;
+    color: #4a1d5d;
+    padding: 8px 15px;
+    margin-top: 0;
+  }
+
+  .btn-secundario:hover { background: #f4a6c3; }
+
+  #canvasDibujo {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    background: #ffffff;
+    border-radius: 15px;
+    border: 2px solid #e5d3ec;
+    touch-action: none;
+    cursor: crosshair;
+    display: block;
+    margin-bottom: 10px;
+  }
+
+  .galeria-dibujos {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-top: 15px;
+  }
+
+  .dibujo-card {
+    background: rgba(255, 255, 255, 0.4);
+    border-radius: 15px;
+    padding: 10px;
+    position: relative;
+  }
+
+  .dibujo-card img {
+    width: 100%;
+    border-radius: 10px;
+    cursor: zoom-in;
+    background: white;
+    display: block;
+  }
+
+  .dibujo-nombre {
+    font-weight: 600;
+    margin: 8px 0 2px;
+    font-size: 0.9rem;
+    color: #4a1d5d;
+    word-break: break-word;
+  }
+
+  .dibujo-fila {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 5px;
+  }
+
+  .dibujo-like {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    user-select: none;
+  }
+
+  .dibujo-like.liked { cursor: default; }
+
+  .borrar-dibujo {
+    cursor: pointer;
+    font-size: 13px;
+    color: #e57373;
+    opacity: 0.6;
+  }
+
+  .borrar-dibujo:hover { opacity: 1; }
+
+  /* --- MODAL --- */
+  #fotoModal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.9);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    cursor: pointer;
+  }
   </style>
 </head>
 <body>
@@ -273,7 +362,7 @@
   </video>
   <div class="overlay"></div>
 
-  <h1>❤️ Nuestro Lobby</h1>
+  <h1>Lobby</h1>
 
   <div class="lobby" id="lobby">
     <div class="card" onclick="abrir('metas')">🎯<br>Metas</div>
@@ -281,6 +370,7 @@
     <div class="card" onclick="abrir('recuerdos')">📸<br>Recuerdos</div>
     <div class="card" onclick="abrir('sorpresa')">🎁<br>Sorpresa</div>
     <div class="card" onclick="abrir('gustos')">❤️<br>Gustos</div>
+    <div class="card" onclick="abrir('dibujos')">🎨<br>Dibujos</div>
   </div>
 
   <div id="metas" class="section">
@@ -334,6 +424,24 @@
     <textarea id="textoGusto" placeholder="¿Qué nos gusta?"></textarea>
     <button onclick="subirGusto()">Añadir a la lista</button>
     <div id="listaGustos"></div>
+    <button class="btn-volver" onclick="volver()">⬅ Volver</button>
+  </div>
+
+  <div id="dibujos" class="section">
+    <h2>Dibujos 🎨</h2>
+    <input id="nombreDibujo" placeholder="Tu nombre...">
+
+    <div class="canvas-toolbar">
+      <input type="color" id="colorPicker" value="#8e65a6">
+      <input type="range" id="grosorPicker" min="1" max="20" value="4">
+      <button type="button" class="btn-secundario" onclick="limpiarCanvas()">🗑 Borrar</button>
+    </div>
+
+    <canvas id="canvasDibujo" width="500" height="375"></canvas>
+
+    <button onclick="guardarDibujo()">Guardar Dibujo</button>
+
+    <div id="galeriaDibujos" class="galeria-dibujos"></div>
     <button class="btn-volver" onclick="volver()">⬅ Volver</button>
   </div>
 
