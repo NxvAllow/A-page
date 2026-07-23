@@ -419,49 +419,6 @@ async function subirGusto() {
   cargarGustos();
 }
 
-async function cargarGustos() {
-  const contenedor = document.getElementById("listaGustos");
-  contenedor.innerHTML = "";
-
-  // 1. Creamos la consulta ordenada por el campo "fecha"
-  // Use "desc" si quieres lo más nuevo arriba, o quítalo para lo más viejo arriba
-  const q = query(collection(db, "gustos"), orderBy("fecha", "desc"));
-
-  // 2. Usamos la consulta 'q' en lugar de la colección directa
-  const querySnapshot = await getDocs(q);
-
-  querySnapshot.forEach((docu) => {
-    const data = docu.data();
-    const card = document.createElement("div");
-    
-    card.style.background = "#fbcfe8";
-    card.style.padding = "15px";
-    card.style.borderRadius = "15px";
-    card.style.position = "relative";
-    card.style.marginBottom = "10px";
-
-    let mediaHTML = "";
-    if (data.url) {
-      if (data.tipo === "image") {
-        mediaHTML = `<img src="${data.url}" style="width:100%; border-radius:10px; cursor:pointer;" onclick="abrirModal('${data.url}', '${data.texto}')">`;
-      } else if (data.tipo === "video") {
-        mediaHTML = `<video src="${data.url}" controls style="width:100%; border-radius:10px;"></video>`;
-      } else if (data.tipo === "raw" || data.url.includes("mp3") || data.url.includes("wav")) {
-        mediaHTML = `<audio src="${data.url}" controls style="width:100%;"></audio>`;
-      }
-    }
-
-    card.innerHTML = `
-      <span style="position:absolute; top:10px; right:15px; cursor:pointer; font-weight:bold;" onclick="borrarGusto('${docu.id}')">❌</span>
-      ${mediaHTML}
-      <p style="margin: 10px 0 5px 0; color: white;">${data.texto}</p>
-      <small style="opacity:0.5; font-size:10px;">${data.fecha}</small>
-    `;
-
-    contenedor.appendChild(card);
-  });
-}
-
 async function borrarGusto(id) {
   if(confirm("¿Borrar este gusto?")) {
     await deleteDoc(doc(db, "gustos", id));
