@@ -470,10 +470,17 @@ async function cargarGustos() {
 
 const canvasDibujo = document.getElementById("canvasDibujo");
 const ctxDibujo = canvasDibujo.getContext("2d");
+const canvasWrapper = document.getElementById("canvasWrapper");
+
 let dibujando = false;
 let ultimoX = 0;
 let ultimoY = 0;
-let modoBorrador = false;
+let herramientaActual = "lapiz"; // 'lapiz' | 'marcador' | 'aerografo' | 'borrador'
+let simetriaActiva = false;
+let zoomActual = 100;
+let intervaloSpray = null;
+let posicionActual = { x: 0, y: 0 };
+
 let historial = [];
 let historialRedo = [];
 const MAX_HISTORIAL = 20;
@@ -501,30 +508,61 @@ function seleccionarColor(color, swatchEl) {
   document.getElementById("colorPicker").value = color;
   document.querySelectorAll(".swatch").forEach(s => s.classList.remove("activo"));
   if (swatchEl) swatchEl.classList.add("activo");
-  usarLapiz();
+  if (herramientaActual === "borrador") usarHerramienta("lapiz");
 }
 
 document.getElementById("colorPicker").addEventListener("input", () => {
   document.querySelectorAll(".swatch").forEach(s => s.classList.remove("activo"));
-  usarLapiz();
+  if (herramientaActual === "borrador") usarHerramienta("lapiz");
 });
 
-function usarLapiz() {
-  modoBorrador = false;
-  document.getElementById("btnLapiz").classList.add("activa");
-  document.getElementById("btnBorrador").classList.remove("activa");
+//////////////////////////////////////////////////
+// 🖌 HERRAMIENTAS (lápiz, marcador, aerógrafo, borrador)
+//////////////////////////////////////////////////
+
+function usarHerramienta(tipo) {
+  herramientaActual = tipo;
+  const botones = {
+    lapiz: "btnLapiz",
+    marcador: "btnMarcador",
+    aerografo: "btnAerografo",
+    borrador: "btnBorrador"
+  };
+  Object.entries(botones).forEach(([nombre, idBoton]) => {
+    document.getElementById(idBoton).classList.toggle("activa", nombre === tipo);
+  });
 }
 
-function usarBorrador() {
-  modoBorrador = true;
-  document.getElementById("btnBorrador").classList.add("activa");
-  document.getElementById("btnLapiz").classList.remove("activa");
+function alternarSimetria() {
+  simetriaActiva = !simetriaActiva;
+  document.getElementById("btnSimetria").classList.toggle("activa", simetriaActiva);
 }
+
+function cambiarZoom(delta) {
+  zoomActual = Math.min(300, Math.max(100, zoomActual + delta));
+  aplicarZoom();
+}
+
+function restablecerZoom() {
+  zoomActual = 100;
+  aplicarZoom();
+}
+
+function aplicarZoom() {
+  const anchoBase = canvasWrapper.clientWidth;
+  canvasDibujo.style.width = (anchoBase * zoomActual / 100) + "px";
+  document.getElementById("zoomLabel").textContent = zoomActual + "%";
+}
+
+//////////////////////////////////////////////////
+// 🕓 HISTORIAL (deshacer / rehacer)
+//////////////////////////////////////////////////
 
 function limpiarCanvas(guardar = true) {
   if (guardar) guardarEstado();
   ctxDibujo.fillStyle = "#ffffff";
   ctxDibujo.fillRect(0, 0, canvasDibujo.width, canvasDibujo.height);
+  if (guardar) autoguardarBorrador();
 }
 limpiarCanvas(false); // fondo blanco inicial, sin registrar en el historial
 
@@ -547,13 +585,41 @@ function deshacer() {
   if (historial.length === 0) return;
   historialRedo.push(canvasDibujo.toDataURL());
   restaurarEstado(historial.pop());
+  autoguardarBorrador();
 }
 
 function rehacer() {
   if (historialRedo.length === 0) return;
   historial.push(canvasDibujo.toDataURL());
   restaurarEstado(historialRedo.pop());
+  autoguardarBorrador();
 }
+
+//////////////////////////////////////////////////
+// 💾 AUTOGUARDADO LOCAL (borrador, no se sube a nadie)
+//////////////////////////////////////////////////
+
+let borradorYaChequeado = false;
+
+function autoguardarBorrador() {
+  try {
+    localStorage.setItem("dibujoBorrador", canvasDibujo.toDataURL());
+  } catch (error) {
+    console.warn("No se pudo autoguardar el boceto:", error);
+  }
+}
+
+function restaurarBorradorDibujo() {
+  if (borradorYaChequeado) return;
+  borradorYaChequeado = true;
+  const guardado = localStorage.getItem("dibujoBorrador");
+  if (guardado) restaurarEstado(guardado);
+}
+window.restaurarBorradorDibujo = restaurarBorradorDibujo;
+
+//////////////////////////////////////////////////
+// ✏️ DIBUJO EN EL CANVAS
+//////////////////////////////////////////////////
 
 function obtenerPosCanvas(e) {
   const rect = canvasDibujo.getBoundingClientRect();
@@ -565,40 +631,128 @@ function obtenerPosCanvas(e) {
   };
 }
 
+function trazarSegmento(x1, y1, x2, y2) {
+  const color = document.getElementById("colorPicker").value;
+  const grosor = Number(document.getElementById("grosorPicker").value);
+  const opacidad = Number(document.getElementById("opacidadPicker").value) / 100;
+
+  ctxDibujo.lineCap = "round";
+  ctxDibujo.lineJoin = "round";
+  ctxDibujo.shadowBlur = 0;
+  ctxDibujo.shadowColor = "transparent";
+
+  if (herramientaActual === "marcador") {
+    ctxDibujo.globalAlpha = opacidad * 0.8;
+    ctxDibujo.strokeStyle = color;
+    ctxDibujo.lineWidth = grosor;
+    ctxDibujo.shadowBlur = grosor * 0.8;
+    ctxDibujo.shadowColor = color;
+  } else if (herramientaActual === "borrador") {
+    ctxDibujo.globalAlpha = 1;
+    ctxDibujo.strokeStyle = "#ffffff";
+    ctxDibujo.lineWidth = grosor * 1.5;
+  } else {
+    // lápiz
+    ctxDibujo.globalAlpha = opacidad;
+    ctxDibujo.strokeStyle = color;
+    ctxDibujo.lineWidth = grosor;
+  }
+
+  ctxDibujo.beginPath();
+  ctxDibujo.moveTo(x1, y1);
+  ctxDibujo.lineTo(x2, y2);
+  ctxDibujo.stroke();
+
+  if (simetriaActiva) {
+    const mx1 = canvasDibujo.width - x1;
+    const mx2 = canvasDibujo.width - x2;
+    ctxDibujo.beginPath();
+    ctxDibujo.moveTo(mx1, y1);
+    ctxDibujo.lineTo(mx2, y2);
+    ctxDibujo.stroke();
+  }
+
+  ctxDibujo.globalAlpha = 1;
+  ctxDibujo.shadowBlur = 0;
+}
+
+function pintarSpray(x, y) {
+  const color = document.getElementById("colorPicker").value;
+  const grosor = Number(document.getElementById("grosorPicker").value);
+  const opacidad = Number(document.getElementById("opacidadPicker").value) / 100;
+  const radio = grosor * 2;
+  const cantidad = Math.round(grosor * 1.5);
+
+  ctxDibujo.fillStyle = color;
+
+  const puntos = [{ x, y }];
+  if (simetriaActiva) puntos.push({ x: canvasDibujo.width - x, y });
+
+  puntos.forEach(punto => {
+    for (let i = 0; i < cantidad; i++) {
+      const angulo = Math.random() * Math.PI * 2;
+      const distancia = Math.random() * radio;
+      const px = punto.x + Math.cos(angulo) * distancia;
+      const py = punto.y + Math.sin(angulo) * distancia;
+      ctxDibujo.globalAlpha = opacidad * 0.35;
+      ctxDibujo.beginPath();
+      ctxDibujo.arc(px, py, Math.max(1, grosor * 0.08), 0, Math.PI * 2);
+      ctxDibujo.fill();
+    }
+  });
+
+  ctxDibujo.globalAlpha = 1;
+}
+
 function empezarDibujo(e) {
   dibujando = true;
   guardarEstado();
   const pos = obtenerPosCanvas(e);
   ultimoX = pos.x;
   ultimoY = pos.y;
+  posicionActual = pos;
+
+  if (herramientaActual === "aerografo") {
+    pintarSpray(pos.x, pos.y);
+    intervaloSpray = setInterval(() => {
+      pintarSpray(posicionActual.x, posicionActual.y);
+    }, 60);
+  }
 }
 
 function dibujarTrazo(e) {
   if (!dibujando) return;
   const pos = obtenerPosCanvas(e);
+  posicionActual = pos;
 
-  ctxDibujo.strokeStyle = modoBorrador ? "#ffffff" : document.getElementById("colorPicker").value;
-  ctxDibujo.lineWidth = document.getElementById("grosorPicker").value;
-  ctxDibujo.lineCap = "round";
-  ctxDibujo.lineJoin = "round";
-
-  ctxDibujo.beginPath();
-  ctxDibujo.moveTo(ultimoX, ultimoY);
-  ctxDibujo.lineTo(pos.x, pos.y);
-  ctxDibujo.stroke();
+  if (herramientaActual === "aerografo") {
+    pintarSpray(pos.x, pos.y);
+  } else {
+    trazarSegmento(ultimoX, ultimoY, pos.x, pos.y);
+  }
 
   ultimoX = pos.x;
   ultimoY = pos.y;
 }
 
 function terminarDibujo() {
+  if (!dibujando) return;
   dibujando = false;
+  if (intervaloSpray) {
+    clearInterval(intervaloSpray);
+    intervaloSpray = null;
+  }
+  autoguardarBorrador();
 }
 
 canvasDibujo.addEventListener("pointerdown", empezarDibujo);
 canvasDibujo.addEventListener("pointermove", dibujarTrazo);
 canvasDibujo.addEventListener("pointerup", terminarDibujo);
 canvasDibujo.addEventListener("pointerleave", terminarDibujo);
+
+//////////////////////////////////////////////////
+// ☁️ GUARDAR EN CLOUDINARY + FIRESTORE
+//////////////////////////////////////////////////
 
 async function guardarDibujo() {
   const nombre = document.getElementById("nombreDibujo").value.trim();
@@ -636,6 +790,7 @@ async function guardarDibujo() {
     });
 
     limpiarCanvas();
+    localStorage.removeItem("dibujoBorrador");
     alert("¡Dibujo guardado! 🎨");
 
   } catch (error) {
@@ -716,8 +871,10 @@ window.limpiarCanvas = limpiarCanvas;
 window.guardarDibujo = guardarDibujo;
 window.darLike = darLike;
 window.borrarDibujo = borrarDibujo;
-window.usarLapiz = usarLapiz;
-window.usarBorrador = usarBorrador;
+window.usarHerramienta = usarHerramienta;
+window.alternarSimetria = alternarSimetria;
+window.cambiarZoom = cambiarZoom;
+window.restablecerZoom = restablecerZoom;
 window.deshacer = deshacer;
 window.rehacer = rehacer;
 escucharChat();
