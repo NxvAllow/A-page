@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Lobby</title>
+  <title>Lobby ❤️</title>
 
   <style>
   body {
@@ -239,6 +239,45 @@
     z-index: 10;
   }
 
+  .paleta-colores {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+
+  .swatch {
+    aspect-ratio: 1;
+    border-radius: 8px;
+    cursor: pointer;
+    border: 2px solid rgba(0,0,0,0.15);
+    transition: transform 0.15s;
+  }
+
+  .swatch:hover { transform: scale(1.1); }
+
+  .swatch.activo {
+    border: 2px solid #4a1d5d;
+    box-shadow: 0 0 0 2px #ffffff inset;
+  }
+
+  .btn-herramienta {
+    width: auto;
+    padding: 8px 12px;
+    font-size: 1.1rem;
+    background: #f1e4f5;
+    color: #4a1d5d;
+    margin-top: 0;
+    border-radius: 10px;
+  }
+
+  .btn-herramienta:hover { background: #e5cff0; }
+
+  .btn-herramienta.activa {
+    background: #a37eb8;
+    color: white;
+  }
+
   /* --- DIBUJOS --- */
   .canvas-toolbar {
     display: flex;
@@ -362,7 +401,7 @@
   </video>
   <div class="overlay"></div>
 
-  <h1>Lobby</h1>
+  <h1>❤️ Nuestro Lobby</h1>
 
   <div class="lobby" id="lobby">
     <div class="card" onclick="abrir('metas')">🎯<br>Metas</div>
@@ -418,7 +457,7 @@
   </div>
 
   <div id="gustos" class="section">
-    <h2>Nuestros Gustos</h2>
+    <h2>Nuestros Gustos ❤️</h2>
     <label>Sube algo multimedia:</label>
     <input type="file" id="gustoInput" accept="image/*,video/*,audio/*">
     <textarea id="textoGusto" placeholder="¿Qué nos gusta?"></textarea>
@@ -431,10 +470,18 @@
     <h2>Dibujos 🎨</h2>
     <input id="nombreDibujo" placeholder="Tu nombre...">
 
+    <div class="paleta-colores" id="paletaColores"></div>
+
     <div class="canvas-toolbar">
-      <input type="color" id="colorPicker" value="#8e65a6">
-      <input type="range" id="grosorPicker" min="1" max="20" value="4">
-      <button type="button" class="btn-secundario" onclick="limpiarCanvas()">🗑 Borrar</button>
+      <input type="color" id="colorPicker" value="#8e65a6" title="Color personalizado">
+      <button type="button" class="btn-herramienta activa" id="btnLapiz" onclick="usarLapiz()" title="Lápiz">✏️</button>
+      <button type="button" class="btn-herramienta" id="btnBorrador" onclick="usarBorrador()" title="Borrador">🧹</button>
+      <input type="range" id="grosorPicker" min="1" max="30" value="4">
+    </div>
+    <div class="canvas-toolbar">
+      <button type="button" class="btn-herramienta" onclick="deshacer()" title="Deshacer">↩️</button>
+      <button type="button" class="btn-herramienta" onclick="rehacer()" title="Rehacer">↪️</button>
+      <button type="button" class="btn-secundario" onclick="limpiarCanvas()">🗑 Borrar todo</button>
     </div>
 
     <canvas id="canvasDibujo" width="500" height="375"></canvas>
@@ -444,6 +491,7 @@
     <div id="galeriaDibujos" class="galeria-dibujos"></div>
     <button class="btn-volver" onclick="volver()">⬅ Volver</button>
   </div>
+
 
   <div id="fotoModal" onclick="if(event.target == this) cerrarModal()">
     <span onclick="cerrarModal()" style="position:absolute; top:20px; right:30px; font-size:50px; color:white; font-weight:bold;">&times;</span>
