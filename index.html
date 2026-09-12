@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fragmento</title>
+<style>
+  :root{
+    --bg: #1A1420;
+    --bg-soft: #241C2C;
+    --ring: #3dc0e8;
+    --ring-dim: #ffffff;
+    --text: #F2E9E4;
+    --text-muted: #9C8FA3;
+    --focus: #E8A33D;
+  }
+
+  *{ box-sizing: border-box; }
+
+  html, body{
+    margin: 0;
+    padding: 0;
+    height: 100%;
+  }
+
+  body{
+    background: radial-gradient(ellipse at 50% 20%, var(--bg-soft), var(--bg) 70%);
+    color: var(--text);
+    font-family: "Space Grotesk", "Segoe UI", sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6vh 6vw;
+    overflow: hidden;
+  }
+
+  header{
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    letter-spacing: 0.02em;
+    text-shadow: 0 1px 6px rgba(0,0,0,0.6);
+  }
+
+  #song-title{
+    font-size: 0.95rem;
+    color: var(--text);
+  }
+
+  main{
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3rem;
+    width: 100%;
+    transition: gap 0.4s ease;
+  }
+
+  body.is-playing main{
+    gap: 0;
+  }
+
+  .player-wrap{
+    position: relative;
+    width: 180px;
+    height: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 1;
+    overflow: hidden;
+    transition: opacity 0.4s ease, height 0.4s ease;
+  }
+
+  body.is-playing .player-wrap{
+    opacity: 0;
+    height: 0;
+  }
+
+  .ring{
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 1px solid var(--ring-dim);
+    transition: border-color 0.4s ease;
+  }
+
+  .ring.pulse{
+    animation: pulse 2.4s ease-out infinite;
+  }
+
+  @keyframes pulse{
+    0%   { box-shadow: 0 0 0 0 rgba(232,163,61,0.35); }
+    70%  { box-shadow: 0 0 0 22px rgba(232,163,61,0); }
+    100% { box-shadow: 0 0 0 0 rgba(232,163,61,0); }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .ring.pulse{ animation: none; }
+    .ring.pulse{ border-color: var(--ring); }
+  }
+
+  #play-button{
+    position: relative;
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    border: 1px solid var(--ring-dim);
+    background: var(--bg-soft);
+    color: var(--text);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease, border-color 0.3s ease;
+  }
+
+  #play-button:hover{
+    transform: scale(1.03);
+    border-color: var(--ring);
+  }
+
+  #play-button:focus-visible{
+    outline: 2px solid var(--focus);
+    outline-offset: 4px;
+  }
+
+  #play-button svg{
+    width: 28px;
+    height: 28px;
+    fill: var(--text);
+  }
+
+  #play-button .icon-pause{ display: none; }
+  #play-button[aria-pressed="true"] .icon-play{ display: none; }
+  #play-button[aria-pressed="true"] .icon-pause{ display: block; }
+
+  .caption-area{
+    min-height: 4.5rem;
+    max-width: 560px;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 1rem;
+  }
+
+  #caption{
+    font-family: "Fraunces", Georgia, serif;
+    font-size: clamp(1.3rem, 3vw, 1.9rem);
+    line-height: 1.4;
+    color: var(--text);
+    text-shadow: 0 2px 10px rgba(0,0,0,0.65);
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+
+  #caption.visible{
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    #caption{ transition: opacity 0.2s linear; transform: none; }
+  }
+
+  footer{
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    opacity: 1;
+    transition: opacity 0.4s ease;
+  }
+
+  body.is-playing footer{
+    opacity: 0;
+  }
+
+  #progress-track{
+    width: min(340px, 70vw);
+    height: 2px;
+    background: var(--ring-dim);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  #progress-fill{
+    height: 100%;
+    width: 0%;
+    background: var(--ring);
+    transition: width 0.1s linear;
+  }
+
+  .sr-only{
+    position: absolute;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* Fondo animado (video o gif) */
+  .bg-media{
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: -2;
+    filter: saturate(1.05);
+  }
+
+  .bg-overlay{
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(180deg, rgba(26,20,32,0.75), rgba(26,20,32,0.55) 45%, rgba(26,20,32,0.85));
+    opacity: 1;
+    transition: opacity 0.4s ease;
+  }
+
+  body.is-playing .bg-overlay{
+    opacity: 0;
+  }
+
+  /* Estilos de la línea según el momento de la canción.
+     Se aplican al #caption combinando la clase base con una de éstas. */
+  #caption.caption--soft{
+    font-style: italic;
+    font-size: clamp(1.05rem, 2.4vw, 1.5rem);
+    color: var(--text-muted);
+    letter-spacing: 0.01em;
+  }
+
+  #caption.caption--climax{
+    font-family: "Times New Roman", Times, serif;
+    font-size: clamp(1.3rem, 3vw, 1.9rem);
+    line-height: 1.4;
+    color: var(--text);
+    transform: translateY(6px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+
+  #caption.caption--whisper{
+    font-size: clamp(1rem, 2vw, 1.3rem);
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+  }
+</style>
+</head>
+<body>
+
+<!--
+  FONDO:
+  Opción A (video, la que está activa) — coloca tu archivo de video
+  en la misma carpeta y reemplaza "fondo.mp4".
+
+  Opción B (gif) — borra el <video>...</video> de abajo y pon en su lugar:
+  <img class="bg-media" src="fondo.gif" alt="">
+-->
+<video class="bg-media" id="bg-video" muted loop playsinline preload="auto">
+  <source src="28236-368501609.mp4" type="video/mp4">
+</video>
+<div class="bg-overlay"></div>
+
+<header>
+  <span id="song-title">El Último Baile (Mia 5) — Alvaro Diaz, Kablito</span>
+  <span id="time-label">0:00 / 0:00</span>
+</header>
+
+<main>
+  <div class="player-wrap">
+    <div class="ring" id="ring"></div>
+    <button id="play-button" aria-pressed="false" aria-label="Reproducir fragmento">
+      <svg class="icon-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+      <svg class="icon-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
+    </button>
+  </div>
+
+  <div class="caption-area">
+    <p id="caption" aria-live="polite"></p>
+  </div>
+</main>
+
+<footer>
+  <div id="progress-track"><div id="progress-fill"></div></div>
+</footer>
+
+<audio id="audio" src="musicc.mpeg" preload="auto"></audio>
+
+<script>
+  // ------------------------------------------------------------------
+  // 1) Pon aquí el archivo de audio.
+  //    Reemplaza "cancion.mp3" (arriba, en <audio src="...">) por la ruta
+  //    de tu propio archivo de audio, colocado en la misma carpeta.
+  //
+  // 2) Escribe tus propios mensajes, sincronizados por segundo.
+  //    "time" = segundo exacto en el que debe aparecer el mensaje.
+  //    "text" = lo que quieres mostrar en pantalla en ese momento.
+  //    Usa tus propias palabras (recuerdos, sensaciones, contexto) en vez
+  //    de copiar la letra textual de la canción, para evitar problemas
+  //    de derechos de autor si vas a compartir la página públicamente.
+  // ------------------------------------------------------------------
+  // Reemplaza cada "LÍNEA N" por el texto correspondiente.
+  // Los tiempos ya están repartidos a lo largo de los 46 segundos del
+  // fragmento; ajústalos si al escuchar notas que alguna línea se
+  // adelanta o se atrasa respecto al audio.
+  // "style" es opcional. Valores disponibles (definidos en el CSS):
+  //   "default" -> tamaño normal (el que ya tenías)
+  //   "soft"    -> más pequeño, en cursiva, tono apagado
+  //   "whisper" -> pequeño, espaciado, casi susurrado
+  //   "climax"  -> grande, en negrita, con brillo cálido
+  // Cambia el valor de cada línea a tu gusto; si omites "style" usa "default".
+  const MESSAGES = [
+    { time: 0,    text: "Contigo era perfecto todo lo imperfecto", style: "default" },
+    { time: 2.8,  text: "Y tú me quisiste así, con to's mis defectos", style: "default" },
+    { time: 5.7,  text: "Como digo que te extraño, como soy honesto", style: "default" },
+    { time: 8.2,  text: "Si ahora no puedo enviarte ni un mensaje 'e texto", style: "default" },
+    { time: 11.2, text: "Pensarte me hace mal, yo lo sé, yo lo sé", style: "default" },
+    { time: 14.2, text: "Qué triste fue decirnos adiós, como dice José, José", style: "default" },
+    { time: 16.9, text: "Escribiéndote canciones por si fuese' a volver", style: "default" },
+    { time: 20.2, text: "Pa qué ganar discusiones si te tuve que perder, negra", style: "default" },
+    { time: 22.9, text: "Te juro que", style: "default" },
+    { time: 23.5, text: "Si supiera que aquel era el último beso que te daba", style: "default" },
+    { time: 28.7, text: "Te juro que nunca me despegaba", style: "default" },
+    { time: 32.7, text: "Te juro que nunca me despegaba...", style: "default" },
+    { time: 34.5, text: "Si supiera que aquel era el último beso que te daba", style: "default" },
+    { time: 40.2, text: "Te juro que nunca me despegaba", style: "default" },
+    { time: 42.8, text: "Te juro que nunca me despegaba...", style: "default" }
+  ];
+
+  const audio = document.getElementById('audio');
+  const playButton = document.getElementById('play-button');
+  const ring = document.getElementById('ring');
+  const caption = document.getElementById('caption');
+  const timeLabel = document.getElementById('time-label');
+  const progressFill = document.getElementById('progress-fill');
+  const bgVideo = document.getElementById('bg-video');
+
+  let lastMessageIndex = -1;
+
+  function formatTime(sec){
+    if (!isFinite(sec)) return "0:00";
+    const m = Math.floor(sec / 60);
+    const s = Math.floor(sec % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  }
+
+  const STYLE_CLASSES = ['caption--soft', 'caption--climax', 'caption--whisper'];
+
+  function showMessage(text, style){
+    caption.classList.remove('visible', ...STYLE_CLASSES);
+    // pequeño retraso para permitir el efecto de transición al cambiar texto
+    window.requestAnimationFrame(() => {
+      caption.textContent = text;
+      if (style && style !== 'default'){
+        caption.classList.add(`caption--${style}`);
+      }
+      window.requestAnimationFrame(() => caption.classList.add('visible'));
+    });
+  }
+
+  function updateCaptionForTime(t){
+    let index = -1;
+    for (let i = 0; i < MESSAGES.length; i++){
+      if (t >= MESSAGES[i].time) index = i;
+    }
+    if (index !== lastMessageIndex && index >= 0){
+      lastMessageIndex = index;
+      showMessage(MESSAGES[index].text, MESSAGES[index].style);
+    }
+  }
+
+  function togglePlay(){
+    if (audio.paused){
+      audio.play();
+    } else {
+      audio.pause();
+    }
+  }
+
+  function pauseOnPageClick(){
+    audio.pause();
+  }
+
+  playButton.addEventListener('click', togglePlay);
+
+  audio.addEventListener('play', () => {
+    playButton.setAttribute('aria-pressed', 'true');
+    playButton.setAttribute('aria-label', 'Pausar fragmento');
+    ring.classList.add('pulse');
+    document.body.classList.add('is-playing');
+    if (bgVideo) bgVideo.play().catch(() => {});
+    // se registra un poco después para no capturar el mismo click que inició la reproducción
+    setTimeout(() => document.addEventListener('click', pauseOnPageClick), 0);
+  });
+
+  audio.addEventListener('pause', () => {
+    playButton.setAttribute('aria-pressed', 'false');
+    playButton.setAttribute('aria-label', 'Reproducir fragmento');
+    ring.classList.remove('pulse');
+    document.body.classList.remove('is-playing');
+    document.removeEventListener('click', pauseOnPageClick);
+    if (bgVideo) bgVideo.pause();
+  });
+
+  audio.addEventListener('ended', () => {
+    lastMessageIndex = -1;
+    showMessage('', 'default');
+    playButton.setAttribute('aria-pressed', 'false');
+    playButton.setAttribute('aria-label', 'Reproducir de nuevo');
+    ring.classList.remove('pulse');
+    document.body.classList.remove('is-playing');
+    document.removeEventListener('click', pauseOnPageClick);
+    progressFill.style.width = '0%';
+    if (bgVideo){
+      bgVideo.pause();
+      bgVideo.currentTime = 0;
+    }
+  });
+
+  audio.addEventListener('timeupdate', () => {
+    updateCaptionForTime(audio.currentTime);
+    timeLabel.textContent = `${formatTime(audio.currentTime)} / ${formatTime(audio.duration)}`;
+    if (audio.duration){
+      progressFill.style.width = `${(audio.currentTime / audio.duration) * 100}%`;
+    }
+  });
+
+  audio.addEventListener('loadedmetadata', () => {
+    timeLabel.textContent = `0:00 / ${formatTime(audio.duration)}`;
+  });
+</script>
+</body>
+</html>
